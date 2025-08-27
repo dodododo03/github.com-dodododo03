@@ -1,0 +1,171 @@
+/* 폰트 & 기본 설정 */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+
+/* ✅ :root를 사용해 컬러, 폰트 등 재사용되는 값을 변수로 관리하면 유지보수가 편리해집니다. */
+:root {
+    --primary-color: #00f5d4;
+    --background-gradient: linear-gradient(to right, #2c5364, #203a43, #0f2027);
+    --text-color: #fff;
+    --card-background: rgba(255, 255, 255, 0.1);
+    --font-main: 'Poppins', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-main);
+    background: var(--background-gradient);
+    color: var(--text-color);
+    line-height: 1.6; /* ✅ 기본 줄 간격을 설정해 가독성을 높입니다. */
+}
+
+/* 헤더 */
+header {
+    text-align: center;
+    padding: 50px 20px;
+    background: linear-gradient(45deg, #00C9FF, #92FE9D);
+    color: var(--text-color);
+    animation: fadeInDown 1.2s ease;
+}
+header h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+header p {
+    font-size: 1.2rem;
+}
+
+/* 네비게이션 */
+nav {
+    position: sticky;
+    top: 0;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+/* ✅ HTML 구조 변경에 맞춰 ul, li 스타일을 추가합니다. */
+nav ul {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    list-style: none; /* li 태그의 기본 점을 제거합니다. */
+}
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 500;
+    transition: color 0.3s ease, text-shadow 0.3s ease; /* ✅ text-shadow도 transition에 추가 */
+}
+nav a:hover {
+    color: var(--primary-color);
+    text-shadow: 0 0 8px var(--primary-color);
+}
+
+/* 컨테이너 */
+.container {
+    max-width: 1200px;
+    margin: 0 auto; /* ✅ margin: auto 대신 0 auto를 사용하면 더 명확합니다. */
+    padding: 40px 20px;
+}
+
+/* 섹션 */
+section {
+    margin-bottom: 80px;
+    animation: fadeIn 1.5s ease;
+}
+h2 {
+    font-size: 2rem;
+    margin-bottom: 30px; /* ✅ 밑줄과의 간격을 고려해 margin을 늘렸습니다. */
+    position: relative;
+    display: inline-block;
+}
+h2::after {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 4px;
+    background: var(--primary-color);
+    bottom: -10px; /* ✅ h2와의 간격을 조금 더 벌렸습니다. */
+    left: 0;
+    border-radius: 4px;
+}
+
+/* 프로젝트 카드 */
+.projects-container { /* ✅ HTML에서 변경된 클래스명 적용 */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+.project-card {
+    background: var(--card-background);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    display: flex; /* ✅ 카드 내부 요소 정렬을 위해 flex를 사용하면 좋습니다. */
+    flex-direction: column;
+}
+.project-card:hover {
+    transform: translateY(-10px); /* ✅ scale 효과는 레이아웃을 흔들 수 있어 일단 제외했습니다. 취향에 따라 다시 추가하셔도 좋습니다. */
+    box-shadow: 0 12px 30px rgba(0,0,0,0.7), 0 0 20px var(--primary-color);
+}
+/* ✅ 프로젝트 이미지 스타일 추가 */
+.project-card img {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+.project-card h3 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+.project-card p {
+    color: #ddd;
+    flex-grow: 1; /* ✅ p 태그가 남은 공간을 모두 차지하게 하여 카드 하단 버튼 정렬을 돕습니다. */
+}
+/* ✅ 프로젝트 링크 스타일 추가 */
+.project-card a {
+    color: var(--primary-color);
+    text-decoration: none;
+    margin-right: 15px;
+    font-weight: 500;
+}
+
+
+/* 연락 */
+.contact a {
+    color: var(--primary-color);
+    font-weight: bold;
+    text-decoration: none;
+    transition: text-shadow 0.3s ease; /* ✅ transition 추가 */
+}
+.contact a:hover {
+    text-shadow: 0 0 8px var(--primary-color);
+}
+
+/* 푸터 */
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.8);
+    margin-top: 50px; /* ✅ 푸터와 마지막 섹션 사이에 여백을 줍니다. */
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+    0% { opacity: 0; transform: translateY(-50px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
