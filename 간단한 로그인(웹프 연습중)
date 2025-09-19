@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>LOGIN</title>
+        <link rel="stylesheet" href="2Loginstyle.css">
+    </head>
+    <body>
+        <div class="ring">
+            <i style="--clr:#ff00cc;"></i>
+            <i style="--clr:#00ffff;"></i>
+            <i style="--clr:#ffcc00;"></i>
+
+            <div class="login">
+                <h2>Login</h2>
+                <div class="inputBx">
+                    <input type="text" placeholder="Username">
+                </div>
+                <div class="inputBx">
+                    <input type="password" placeholder="password">
+                </div> 
+                <div class="inputBx">
+                    <input type="submit" value="Sign in">
+                </div>
+                <div class="links">
+                    <a href="#">Forget Password</a><br>
+                    <a href="#">Sign up</a>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
