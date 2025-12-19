@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Dobble Game</title>
+    <style>
+        :root {
+            --bg-color: #2c3e50;
+            --card-bg: #ecf0f1;
+            --accent-color: #e74c3c;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none; /* 드래그 방지 */
+        }
+
+        /* 상단 UI */
+        #game-info {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #score-board span {
+            font-weight: bold;
+            color: #f1c40f;
+        }
+
+        /* 게임 영역 */
+        #game-area {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 카드 스타일 (원형) */
+        .card {
+            width: 300px;
+            height: 300px;
+            background-color: var(--card-bg);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+        }
+
+        /* 심볼 스타일 */
+        .symbol {
+            position: absolute;
+            font-size: 3rem; /* 기본 크기 */
+            transform-origin: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            /* 텍스트 줄바꿈 방지 및 이모지 정렬 */
+            white-space: nowrap;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .symbol:active {
+            transform: scale(0.8) !important; /* 클릭 시 눌리는 효과 */
+        }
+
+        /* 애니메이션 효과 */
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        /* 반응형 처리 */
+        @media (max-width: 700px) {
+            #game-area {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .card {
+                width: 240px;
+                height: 240px;
+            }
+            .symbol {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-info">
+        <div id="score-board">Score: <span id="score">0</span></div>
+        <div style="font-size: 1rem; margin-top:5px; color:#bdc3c7;">공통된 그림을 찾아 클릭하세요!</div>
+    </div>
+
+    <div id="game-area">
+        <div id="card-left" class="card"></div>
+        <div id="card-right" class="card"></div>
+    </div>
+
+    <script>
+        /**
+         * 1. DobbleMath: 핵심 카드 생성 알고리즘 (유한 사영 평면)
+         */
+        class DobbleMath {
+            constructor(order) {
+                this.n = order; // 차수 (심볼 개수 = n + 1)
+                this.totalSymbols = this.n * this.n + this.n + 1;
+                this.deck = [];
+            }
+
+            generateDeck() {
+                const n = this.n;
+                let deck = [];
+
+                // 1. 첫 번째 시리즈: (0, 1, ..., n) 형태의 첫 카드 생성에 관여하는 그룹
+                for (let i = 0; i <= n; i++) {
+                    let card = [0]; // 0번 심볼(무한대점)을 공유
+                    for (let j = 0; j < n; j++) {
+                        card.push((j + 1) + (i * n));
+                    }
+                    deck.push(card);
+                }
+
+                // 2. 두 번째 시리즈: 나머지 n x n 개의 카드 생성
+                for (let i = 0; i < n; i++) {
+                    for (let j = 0; j < n; j++) {
+                        let card = [i + 1]; // 기준점
+                        for (let k = 0; k < n; k++) {
+                            // 핵심 수학 공식: (n + 1 + n*k + (i*k + j) % n)
+                            let val = (n + 1) + (n * k) + ((i * k + j) % n);
+                            card.push(val);
+                        }
+                        deck.push(card);
+                    }
+                }
+                
+                this.deck = deck;
+                return deck;
+            }
+        }
+
+        /**
+         * 2. GameState: 게임의 상태(점수, 현재 카드 등) 관리
+         */
+        class GameState {
+            constructor(order) {
+                this.math = new DobbleMath(order);
+                this.fullDeck = [];
+                this.currentPair = []; // [cardA, cardB]
+                this.score = 0;
+                
+                // 사용할 이모지 풀 (ID와 매핑됨)
+                this.symbols = [
+                    '🍎','🍌','🍇','🍉','🍒','🍓','🍍','🥝','🥑','🍆',
+                    '🌽','🥕','🥔','🥦','🍄','🥜','🍞','🥐','🥖','🥨',
+                    '🧀','🍖','🍗','🍔','🍟','🍕','🌭','🥪','🌮','🌯',
+                    '🍳','🥘','🍲','🥣','🥗','🍿','🧂','🥫','🍱','🍙',
+                    '🍤','🍥','🥮','🍡','🥟','🥠','🥡','🍦','🍧','🍨',
+                    '🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮'
+                ];
+            }
+
+            initGame() {
+                // 덱 생성 및 셔플 (랜덤성을 여기서 부여)
+                this.fullDeck = this.math.generateDeck();
+                this.shuffle(this.fullDeck);
+                this.score = 0;
+                this.nextRound();
+            }
+
+            // Fisher-Yates Shuffle
+            shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            nextRound() {
+                if (this.fullDeck.length < 2) {
+                    // 덱 소진 시 다시 생성 (무한 모드)
+                    this.fullDeck = this.math.generateDeck();
+                    this.shuffle(this.fullDeck);
+                }
+                // 앞에서 두 장을 꺼내서 대결
+                const cardA = this.fullDeck.pop();
+                const cardB = this.fullDeck[this.fullDeck.length - 1]; // 하나는 남겨두고 연결되는 느낌을 위해 (혹은 그냥 2개 pop해도 됨)
+                
+                // 실제 게임성을 위해 cardB는 덱에서 완전히 제거하지 않고 다음 라운드의 cardA가 되게 할 수도 있음.
+                // 여기서는 단순함을 위해 매번 2장을 새로 뽑는 로직 대신,
+                // 이전 승자 카드를 유지하는 방식을 쓰거나, 그냥 랜덤 2장 뽑기를 구현.
+                // (요구사항: 맞히면 다음 카드로 진행) -> 덱에서 2장 뽑아서 세팅.
+                
+                this.currentPair = [cardA, cardB];
+                return this.currentPair;
+            }
+
+            checkAnswer(symbolId) {
+                const [cardA, cardB] = this.currentPair;
+                // 두 카드 모두에 해당 ID가 있는지 확인
+                if (cardA.includes(symbolId) && cardB.includes(symbolId)) {
+                    this.score++;
+                    return true;
+                }
+                return false;
+            }
+
+            getSymbolChar(id) {
+                return this.symbols[id % this.symbols.length];
+            }
+        }
+
+        /**
+         * 3. Renderer: 화면 그리기 및 위치 계산
+         */
+        class Renderer {
+            constructor(state) {
+                this.state = state;
+                this.leftCardEl = document.getElementById('card-left');
+                this.rightCardEl = document.getElementById('card-right');
+                this.scoreEl = document.getElementById('score');
+            }
+
+            render() {
+                const [deckA, deckB] = this.state.currentPair;
+                this.renderCard(this.leftCardEl, deckA);
+                this.renderCard(this.rightCardEl, deckB);
+                this.scoreEl.innerText = this.state.score;
+            }
+
+            // 카드를 원형으로 배치하여 렌더링
+            renderCard(container, symbolIds) {
+                container.innerHTML = ''; // 초기화
+                
+                // 시각적 셔플: 같은 카드라도 매번 배치가 달라 보이게 하기 위해 배열 순서를 섞음
+                const shuffledIds = [...symbolIds]; 
+                this.shuffleArray(shuffledIds);
+
+                const count = shuffledIds.length;
+                const radius = 100; // 중심으로부터의 거리 (px)
+                const centerOffset = 150; // 카드 중심점 (width/2)
+
+                shuffledIds.forEach((id, index) => {
+                    const symbolEl = document.createElement('div');
+                    symbolEl.classList.add('symbol');
+                    symbolEl.innerText = this.state.getSymbolChar(id);
+                    symbolEl.dataset.id = id; // 데이터 속성으로 ID 저장
+
+                    // 원형 배치 좌표 계산
+                    // 360도를 N등분하되, 약간의 랜덤성을 추가해 자연스럽게 만듦
+                    const angleStep = (2 * Math.PI) / count;
+                    const angle = index * angleStep; // 정석 배치
+                    
+                    // 위치 계산 (삼각함수)
+                    const x = centerOffset + radius * Math.cos(angle);
+                    const y = centerOffset + radius * Math.sin(angle);
+
+                    // 랜덤 회전 및 크기 조절 (장식 요소)
+                    const randomRot = Math.floor(Math.random() * 360);
+                    const randomScale = 0.8 + Math.random() * 0.5; // 0.8 ~ 1.3배
+
+                    symbolEl.style.left = `${x}px`;
+                    symbolEl.style.top = `${y}px`;
+                    symbolEl.style.transform = `translate(-50%, -50%) rotate(${randomRot}deg) scale(${randomScale})`;
+
+                    container.appendChild(symbolEl);
+                });
+
+                // 등장 애니메이션
+                container.classList.remove('animate-pop');
+                void container.offsetWidth; // 리플로우 강제 (애니메이션 리셋)
+                container.classList.add('animate-pop');
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            shakeBoard() {
+                const area = document.getElementById('game-area');
+                area.classList.remove('shake');
+                void area.offsetWidth;
+                area.classList.add('shake');
+            }
+        }
+
+        /**
+         * 4. Main & Event Handling
+         */
+        const ORDER = 5; // 차수 5 -> 한 카드에 6개 그림
+        const gameState = new GameState(ORDER);
+        const renderer = new Renderer(gameState);
+
+        // 게임 초기화
+        gameState.initGame();
+        renderer.render();
+
+        // 이벤트 위임 (Event Delegation) - 성능 최적화
+        document.getElementById('game-area').addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('symbol')) {
+                const clickedId = parseInt(e.target.dataset.id);
+                
+                if (gameState.checkAnswer(clickedId)) {
+                    // 정답 로직
+                    // 1. 점수 증가 (내부 처리됨)
+                    // 2. 새로운 카드 세팅
+                    gameState.nextRound();
+                    // 3. 렌더링
+                    renderer.render();
+                } else {
+                    // 오답 로직
+                    renderer.shakeBoard();
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
